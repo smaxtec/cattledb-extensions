@@ -3,61 +3,11 @@
 #include <vector>
 #include <ctime>
 
+#include "data_item.hpp"
+#include "convert_ts.hpp"
+
 using namespace std;
 namespace py = pybind11;
-
-
-struct data_item {
-  int64_t ts;
-  int32_t ts_offset;
-  double value;
-
-  const std::array<char, sizeof("2019-08-01T09:41:01+00:00")> iso_format() const {
-      char buf[sizeof("2019-08-01T09:41:01+00:00")];
-      char add[sizeof("+00:00")];
-      time_t timeGMT = (time_t) (ts + ts_offset);
-      uint32_t hours = (uint32_t) (ts_offset / 3600);
-      uint32_t minutes = (uint32_t) ((ts_offset / 60) % 60);
-      std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S+00:00", std::gmtime(&timeGMT));
-      std::sprintf(add, "+%02d:%02d", hours%100, minutes%100);
-
-      std::array<char, sizeof("2019-08-01T09:41:01+00:00")> arr;
-      memcpy(&arr[0], buf, sizeof("2019-08-01T09:41:01+00:00"));
-      memcpy(&arr[sizeof("2019-08-01T09:41:01")-1], add, sizeof("+00:00"));
-
-      return arr;
-  }
-
-  const std::array<char, sizeof(int64_t) + sizeof(int32_t) + sizeof(double)> to_bytes() const {
-      union {
-        int64_t int_var;
-        char byte_array[sizeof(int64_t)];  // Size 8
-      } uint64_u;
-
-      union {
-        int32_t int_var;
-        char byte_array[sizeof(int32_t)];  // Size 4
-      } int32_u;
-
-      union {
-        double double_var;
-        char byte_array[sizeof(double)];  // size 8
-      } double_u;
-
-      uint64_u.int_var = ts;
-      int32_u.int_var = ts_offset;
-      double_u.double_var = value;
-
-      std::array<char, sizeof(int64_t) + sizeof(int32_t) + sizeof(double)> arr;
-
-      memcpy(&arr[0], uint64_u.byte_array, sizeof(int64_t));
-      memcpy(&arr[sizeof(int64_t)], int32_u.byte_array, sizeof(int32_t));
-      memcpy(&arr[sizeof(int64_t) + sizeof(int32_t)], double_u.byte_array, sizeof(double));
-
-      return arr;
-  }
-};
-
 
 namespace pybind11 { namespace detail {
     template <> struct type_caster<data_item> {
@@ -96,17 +46,18 @@ namespace pybind11 { namespace detail {
          * ignored by implicit casters.
          */
         static handle cast(data_item src, return_value_policy /* policy */, handle /* parent */) {
-            return PyTuple_Pack(3, PyLong_FromLong(src.ts), PyLong_FromLong(src.ts_offset), PyFloat_FromDouble(src.value));
+            return PyTuple_Pack(3, PyLong_FromLongLong(src.ts), PyLong_FromLong(src.ts_offset), PyFloat_FromDouble(src.value));
         }
     };
 }}
+
 
 typedef std::deque<data_item> data_deque;
 typedef std::tuple<std::string, double> iso_item;
 
 class timeseries {
     public:
-        timeseries(const std::string &key, const std::string &metric) : 
+        timeseries(const std::string &key, const std::string &metric) :
             key(key), metric(metric), _min_ts(0), _max_ts(0) { }
 
         void setKey(const std::string &key_) { key = key_; }
@@ -139,8 +90,8 @@ class timeseries {
         }
 
         void trim_idx(const size_t &start_idx, const size_t &end_idx) {
-            int erase_left = start_idx;
-            int erase_right = _data.size() - end_idx;
+            auto erase_left = start_idx;
+            auto erase_right = _data.size() - end_idx;
             if (erase_left >= 1 && erase_left < _data.size())
                 _data.erase(_data.begin(), _data.begin() + erase_left);
             if (erase_right >= 1 && erase_right <= _data.size())
@@ -148,8 +99,8 @@ class timeseries {
         }
 
         void trim_ts(const int64_t &start_ts, const int64_t &end_ts) {
-            int idx1 = bisect_left(start_ts);
-            int idx2 = bisect_left(end_ts);
+            auto idx1 = bisect_left(start_ts);
+            auto idx2 = bisect_left(end_ts);
             trim_idx(idx1, idx2);
         }
 
@@ -215,30 +166,8 @@ class timeseries {
         }
 
         bool insert_iso(const std::string &iso_ts, const double &value) {
-            int y,M,d,h,m;
-            float s;
-            int tzh = 0, tzm = 0;
-            int32_t ts_offset = 0;
-            int parsed_cnt = sscanf(iso_ts.c_str(), "%d-%d-%dT%d:%d:%f%d:%dZ", &y, &M, &d, &h, &m, &s, &tzh, &tzm);
-
-            if (parsed_cnt > 6) {
-                if (tzh < 0) {
-                    tzm = -tzm;
-                }
-                ts_offset = (tzm * 60) + (tzh * 3600);
-            }
-
-            tm time;
-            time.tm_year = y - 1900; // Year since 1900
-            time.tm_mon = M - 1;     // 0-11
-            time.tm_mday = d;        // 1-31
-            time.tm_hour = h;        // 0-23
-            time.tm_min = m;         // 0-59
-            time.tm_sec = (int)s;    // 0-61 (0-60 in C++11)
-
-            int64_t ts = (int64_t) timegm(&time);
-            ts = ts - ts_offset;
-            return insert(ts, ts_offset, value);
+            auto time = fromIsoString(iso_ts);
+            return insert(time.ts, time.ts_offset, value);
         }
 
         bool insert(const int64_t &ts, const int32_t &ts_offset, const double &value) {
@@ -257,7 +186,7 @@ class timeseries {
                 _max_ts = ts;
                 return true;
             }
-            
+
             // Insert Front
             if (ts < _min_ts) {
                 _data.push_front(d);
@@ -291,6 +220,7 @@ class timeseries {
         int64_t _min_ts;
         int64_t _max_ts;
 };
+
 
 
 PYBIND11_MODULE(cdb_ext_ts, m) {
