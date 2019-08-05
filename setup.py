@@ -63,6 +63,9 @@ setup(
     author_email='matthias.wutte@gmail.com',
     description='Extensions for Timeseries DB',
     long_description='',
+    install_requires=[
+        "pendulum"
+    ],
     ext_modules=[CMakeExtension('cdb_ext_ts')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
