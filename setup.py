@@ -58,13 +58,13 @@ class CMakeBuild(build_ext):
 
 setup(
     name='cdb_ext',
-    version='1.0.0',
+    version='0.1',
     author='Matthias Wutte',
     author_email='matthias.wutte@gmail.com',
     description='Extensions for Timeseries DB',
     long_description='',
     install_requires=[
-        "pendulum"
+        "pendulum", "cmake"
     ],
     ext_modules=[CMakeExtension('cdb_ext_ts')],
     cmdclass=dict(build_ext=CMakeBuild),
