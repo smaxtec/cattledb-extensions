@@ -65,3 +65,50 @@ class BaseTest(unittest.TestCase):
         assert t1.at_index(0)[0] == dt.int_timestamp
         assert t1.at_index(0)[1] == 3600
         assert t1.iso_at_index(0)[0] == "2008-03-03T12:00:00+01:00"
+
+    def test_trim(self):
+        t1 = FastTSList("a", "b")
+
+        end = pendulum.now("Europe/Vienna")
+        start = end.subtract(minutes=199)
+
+        data = [(start.add(minutes=n), random.random()) for n in range(0, 200)]
+
+        for dt, val in data:
+            t1.insert_datetime(dt, val)
+
+        assert len(t1) == 200
+        t1.trim_index(100, 200)
+        assert len(t1) == 100
+        t1.trim_ts(start, end)
+        assert len(t1) == 100
+        t1.trim_ts(end.subtract(minutes=9), end)
+        assert len(t1) == 10
+
+    def test_index(self):
+        t = FastTSList("a", "b")
+
+        end = pendulum.now("America/Toronto")
+        start = end.subtract(minutes=199)
+
+        data = [(start.add(minutes=n), random.random()) for n in range(0, 200)]
+        for dt, val in data:
+            t.insert_datetime(dt, val)
+
+        print(t.at_index(199))
+        assert t.index_of_ts(end) == 199
+        assert t.index_of_ts(end.subtract(minutes=3)) == 196
+
+        with self.assertRaises(KeyError):
+            t.index_of_ts(end.subtract(seconds=1)) 
+
+        with self.assertRaises(KeyError):
+            del t[-1]
+        with self.assertRaises(KeyError):
+            t.index_of_ts(end.add(seconds=1))
+
+        last_ts = t.nearest_index_of_ts(end.add(seconds=1))
+        assert last_ts == 199
+
+        prev_ts = t.nearest_index_of_ts(end.subtract(seconds=40))
+        assert prev_ts == 198

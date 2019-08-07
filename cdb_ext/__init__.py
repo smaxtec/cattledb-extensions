@@ -44,6 +44,10 @@ class _TSList(object):
     def insert(self, ts, ts_offset, value):
         self._data.insert(ts, ts_offset, value)
 
+    def insert_datetime(self, dt, value):
+        timestamp, offset = extract_ts(dt)
+        self._data.insert(timestamp, offset, value)
+
     def insert_iso(self, iso_ts, value):
         return self._data.insert_iso(iso_ts, value)
 
@@ -93,7 +97,8 @@ class _TSList(object):
     def metric(self):
         return self._data.metric
 
-    def index_of_ts(self, ts):
+    def index_of_ts(self, dt):
+        ts, _ = extract_ts(dt)
         return self._data.index_of_ts(ts)
 
     def __iter__(self):
@@ -132,13 +137,19 @@ class _TSList(object):
     def to_list(self):
         return list([x for x in self])
 
-    def trim_idx(self, start_idx, end_idx):
+    def trim_index(self, start_idx, end_idx):
         self._data.trim_idx(start_idx, end_idx)
         return self
 
-    def trim_ts(self, start_ts, end_ts):
-        self._data.trim_ts(start_ts, start_ts)
+    def trim_ts(self, start_dt, end_dt):
+        start_ts, _ = extract_ts(start_dt)
+        end_ts, _ = extract_ts(end_dt)
+        self._data.trim_ts(start_ts, end_ts)
         return self
+
+    def nearest_index_of_ts(self, dt):
+        ts, _ = extract_ts(dt)
+        return self._data.nearest_index_of_ts(ts)
 
 
 class PyTSList(_TSList):

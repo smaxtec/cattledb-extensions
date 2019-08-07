@@ -40,17 +40,12 @@ class py_timeseries(object):
 
     def at_ts(self, ts):
         idx = self.bisect_left(ts)
-        if idx-1 >= 0:
+        item = self._data[idx]
+        if item[0] == ts:
             return self._data[idx]
+        raise KeyError("timestamp: {}".format(ts))
 
-        t2 = self._data[idx][0]
-        t1 = self._data[idx-1][0]
-
-        if abs(ts - t1) <= abs(ts - t2):
-            return self._data[idx-1]
-        return self._data[idx]
-
-    def index_of_ts(self, ts):
+    def nearest_index_of_ts(self, ts):
         idx = self.bisect_left(ts)
         if idx-1 >= 0:
             return idx
@@ -61,6 +56,13 @@ class py_timeseries(object):
         if abs(ts - t1) <= abs(ts - t2):
             return idx-1
         return idx
+
+    def index_of_ts(self, ts):
+        idx = self.bisect_left(ts)
+        item = self._data[idx]
+        if item[0] == ts:
+            return idx
+        raise KeyError("timestamp: {}".format(ts))
 
     def iso_at(self, key):
         t = self.at(key)

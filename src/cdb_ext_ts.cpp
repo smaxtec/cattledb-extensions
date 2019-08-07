@@ -70,18 +70,12 @@ class timeseries {
 
         bool remove_ts(const int64_t &ts) {
             auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
-
-            if ((*idx).ts == ts) {
+            int64_t ts_from_it = (*idx).ts;
+            if (ts_from_it == ts) {
                 _data.erase(idx);
                 return true;
             }
-
-            if (idx != _data.begin() || (*--idx).ts == ts) {
-                _data.erase(idx);
-                return true;
-            }
-
-            return false;
+            throw pybind11::key_error("timestamp: " + std::to_string(ts));
         }
 
         bool remove(const size_t &i) {
@@ -124,20 +118,14 @@ class timeseries {
 
         const data_item &at_ts(const int64_t &ts) {
             auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
-            if (idx == _data.begin()) {
+            int64_t ts_from_it = (*idx).ts;
+            if (ts_from_it == ts) {
                 return *idx;
             }
-            if (idx == _data.end()) {
-                return *--idx;
-            }
-            int64_t t2 = (*idx).ts;
-            int64_t t1 = (*--idx).ts;
-            if (abs(ts - t1) <= abs(ts - t2))
-                return *idx;
-            return (*++idx);
+            throw pybind11::key_error("timestamp: " + std::to_string(ts));
         }
 
-        const size_t index_of_ts(const int64_t &ts) {
+        const size_t nearest_index_of_ts(const int64_t &ts) {
             auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
             if (idx == _data.begin()) {
                 return idx - _data.begin();
@@ -150,6 +138,15 @@ class timeseries {
             if (abs(ts - t1) <= abs(ts - t2))
                 return idx - _data.begin();
             return ++idx - _data.begin();
+        }
+
+        const size_t index_of_ts(const int64_t &ts) {
+            auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
+            int64_t ts_from_it = (*idx).ts;
+            if (ts_from_it == ts) {
+                return idx - _data.begin();
+            }
+            throw pybind11::key_error("timestamp: " + std::to_string(ts));
         }
 
         static bool data_compare_left(const data_item& obj, int64_t ts) { return obj.ts < ts; }
@@ -234,6 +231,7 @@ PYBIND11_MODULE(cdb_ext_ts, m) {
         .def("at", &timeseries::at)
         .def("at_ts", &timeseries::at_ts)
         .def("index_of_ts", &timeseries::index_of_ts)
+        .def("nearest_index_of_ts", &timeseries::nearest_index_of_ts)
         .def("iso_at", &timeseries::iso_at)
         .def("bytes_at", &timeseries::bytes_at)
         .def("bisect_left", &timeseries::bisect_left)

@@ -50,7 +50,7 @@ print(ts[start])
 print(ts.at_index(2))
 
 # trim to 3 items
-ts.trim_idx(2, 4)
+ts.trim_index(2, 4)
 
 # remove item
 del ts[start.add(hours=3)]
