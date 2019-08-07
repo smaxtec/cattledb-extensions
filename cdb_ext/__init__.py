@@ -71,6 +71,10 @@ class _TSList(object):
     def iso_at_index(self, i):
         return self._data.iso_at(i)
 
+    def datetime_at_index(self, i):
+        item = self.at_index(i)
+        return (pendulum.from_timestamp(item[0], item[1]/3600.0), item[2])
+
     def bytes_at_index(self, i):
         return self._data.bytes_at(i)
 
@@ -93,22 +97,48 @@ class _TSList(object):
         return self._data.index_of_ts(ts)
 
     def __iter__(self):
+        return self._iterate_raw()
+
+    def _iterate_raw(self):
         i = 0
         while i < len(self):
             yield self.at_index(i)
             i += 1
 
-    def _iterate_serializables(self):
+    def _iterate_serializable(self):
         i = 0
         while i < len(self):
             yield self.iso_at_index(i)
             i += 1
 
+    def _iterate_datetime(self):
+        i = 0
+        while i < len(self):
+            yield self.datetime_at_index(i)
+            i += 1
+
     def serializable(self):
-        return StreamList(self._iterate_serializables)
+        return StreamList(self._iterate_serializable)
+
+    def iter_iso(self):
+        return StreamList(self._iterate_serializable)
+
+    def iter_datetime(self):
+        return StreamList(self._iterate_datetime)
+
+    def iter_raw(self):
+        return StreamList(self._iterate_raw)
 
     def to_list(self):
         return list([x for x in self])
+
+    def trim_idx(self, start_idx, end_idx):
+        self._data.trim_idx(start_idx, end_idx)
+        return self
+
+    def trim_ts(self, start_ts, end_ts):
+        self._data.trim_ts(start_ts, start_ts)
+        return self
 
 
 class PyTSList(_TSList):
