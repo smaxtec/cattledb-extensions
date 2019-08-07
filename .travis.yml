@@ -1,26 +1,18 @@
-language: cpp
-dist: trusty
-matrix:
-  include:
-  - os: linux
-    env: PYTHON=2.7
-  - os: linux
-    env: PYTHON=3.5
-  - os: linux
-    env: PYTHON=3.6
+sudo: required
 
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
 before_install:
-- |
-  export CXX=g++-4.8
-  export CC=gcc-4.8
-  pip install --user --upgrade pip virtualenv pytest
-  virtualenv -p python$PYTHON venv
-  source venv/bin/activate
-
+  - sleep 1
 install:
-- |
-  python setup.py sdist
-  pip install --verbose dist/*.tar.gz
-
+  - pip install pytest
+  - pip install .
+before_script:
+  - sleep 1
 script:
-- pytest tests
+  - pytest tests
+after_success:
+  - sleep 1
