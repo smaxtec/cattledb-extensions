@@ -42,11 +42,11 @@ class _TSList(object):
         self._data = self.__container__(key, metric)
 
     def insert(self, ts, ts_offset, value):
-        self._data.insert(ts, ts_offset, value)
+        return self._data.insert(ts, ts_offset, value)
 
     def insert_datetime(self, dt, value):
         timestamp, offset = extract_ts(dt)
-        self._data.insert(timestamp, offset, value)
+        return self._data.insert(timestamp, offset, value)
 
     def insert_iso(self, iso_ts, value):
         return self._data.insert_iso(iso_ts, value)
