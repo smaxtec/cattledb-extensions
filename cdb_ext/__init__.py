@@ -21,7 +21,7 @@ def extract_ts(ts):
         return ts.int_timestamp, ts.offset
     elif isinstance(ts, datetime.datetime):
         pd = pendulum.instance(ts)
-        return ts.int_timestamp, ts.offset
+        return pd.int_timestamp, pd.offset
     elif isinstance(ts, tuple):
         return int(ts[0]), int(ts[1])
     raise TypeError("invlid value ({}){} for ts".format(type(ts), ts))

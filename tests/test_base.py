@@ -77,6 +77,9 @@ class BaseTest(unittest.TestCase):
         for dt, val in data:
             t1.insert_datetime(dt, val)
 
+        assert t1._data.bisect_left(0) == 0
+        assert t1._data.bisect_right(0) == 0
+
         assert len(t1) == 200
         t1.trim_index(100, 200)
         assert len(t1) == 100
@@ -84,6 +87,33 @@ class BaseTest(unittest.TestCase):
         assert len(t1) == 100
         t1.trim_ts(end.subtract(minutes=9), end)
         assert len(t1) == 10
+        t1.trim_index(0, 0)
+        assert len(t1) == 1
+
+    def test_trim_exact(self):
+        t1 = FastTSList("a", "b")
+
+        t1.insert(100, 0, 2.2)
+        t1.insert(200, 0, 2.2)
+        t1.insert(300, 0, 2.2)
+        t1.insert(400, 0, 2.2)
+
+        assert len(t1) == 4
+        t1.trim_ts(100, 400)
+        assert len(t1) == 4
+        t1.trim_ts(100, 399)
+        assert len(t1) == 3
+        t1.trim_ts(99, 399)
+        assert len(t1) == 3
+        t1.trim_ts(101, 399)
+        assert len(t1) == 2
+        t1.trim_ts(0, 399)
+        assert len(t1) == 2
+        t1.trim_ts(200, 300)
+        assert len(t1) == 2
+        t1.trim_ts(0, 1)
+        assert len(t1) == 0
+
 
     def test_index(self):
         t = FastTSList("a", "b")

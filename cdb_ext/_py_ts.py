@@ -36,7 +36,7 @@ class py_timeseries(object):
         return bisect.bisect_left(KeyWrapper(self), ts)
 
     def bisect_right(self, ts):
-        return bisect.bisect_left(KeyWrapper(self), ts)
+        return bisect.bisect_right(KeyWrapper(self), ts)
 
     def at(self, key):
         return self._data[key]
@@ -90,8 +90,11 @@ class py_timeseries(object):
 
     def trim_ts(self, start_ts, end_ts):
         idx1 = self.bisect_left(start_ts)
-        idx2 = self.bisect_left(end_ts)
-        self.trim_idx(idx1, idx2)
+        idx2 = self.bisect_right(end_ts)
+        if idx2 > 1:
+            self.trim_idx(idx1, idx2-1)
+        else:
+            self._data.clear()
 
     def get_min_ts(self):
         return self._data[0][0]

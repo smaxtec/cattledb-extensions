@@ -94,8 +94,12 @@ class timeseries {
 
         void trim_ts(const int64_t &start_ts, const int64_t &end_ts) {
             auto idx1 = bisect_left(start_ts);
-            auto idx2 = bisect_left(end_ts);
-            trim_idx(idx1, idx2);
+            auto idx2 = bisect_right(end_ts);
+            if (idx2 > 0) {
+                trim_idx(idx1, idx2-1);
+            } else {
+                _data.clear();
+            }
         }
 
         const iso_item iso_at(const size_t &i) const {
