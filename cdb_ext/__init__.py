@@ -151,6 +151,12 @@ class _TSList(object):
         ts, _ = extract_ts(dt)
         return self._data.nearest_index_of_ts(ts)
 
+    def to_iso_json(self):
+        out = []
+        for ts, value in self._iterate_serializable():
+            out.append('["{}",{}]'.format(ts, value))
+        return "[" + ",\n".join(out) + "]"
+
 
 class PyTSList(_TSList):
     __container__ = py_timeseries
