@@ -1,5 +1,7 @@
 import bisect
 import pendulum
+import six
+
 
 class KeyWrapper:
     key_getter = lambda c: c[0]
@@ -94,7 +96,10 @@ class py_timeseries(object):
         if idx2 > 1:
             self.trim_idx(idx1, idx2-1)
         else:
-            self._data.clear()
+            if six.PY2:
+                del self._data[:]
+            else:
+                self._data.clear()
 
     def get_min_ts(self):
         return self._data[0][0]
