@@ -54,6 +54,8 @@ namespace pybind11 { namespace detail {
 
 typedef std::deque<data_item> data_deque;
 typedef std::tuple<std::string, double> iso_item;
+typedef std::tuple<int64_t, int32_t, double> c_data_item;
+
 
 class timeseries {
     public:
@@ -103,31 +105,46 @@ class timeseries {
         }
 
         const iso_item iso_at(const size_t &i) const {
-            data_item d = at(i);
+            data_item d = _data.at(i);
             auto arr = d.iso_format();
             std::string str(begin(arr), end(arr)-1);
             return std::make_tuple(str, d.value);
         }
 
         const py::bytes bytes_at(const size_t &i) const {
-            data_item d = at(i);
+            data_item d = _data.at(i);
             auto arr = d.to_bytes();
             std::string str(begin(arr), end(arr));
             return str;
         }
 
-        const data_item &at(const size_t &i) const {
-            return _data.at(i);
+        const c_data_item at(const size_t &i) const {
+            data_item d = _data.at(i);
+            return std::make_tuple(d.ts, d.ts_offset, d.value);
         }
 
-        const data_item &at_ts(const int64_t &ts) {
+        const c_data_item at_ts(const int64_t &ts) {
             auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
             int64_t ts_from_it = (*idx).ts;
             if (ts_from_it == ts) {
-                return *idx;
+                data_item d = *idx;
+                return std::make_tuple(d.ts, d.ts_offset, d.value);
             }
             throw pybind11::key_error("timestamp: " + std::to_string(ts));
         }
+
+        // const data_item &at(const size_t &i) const {
+        //     return _data.at(i);
+        // }
+
+        // const data_item &at_ts(const int64_t &ts) {
+        //     auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
+        //     int64_t ts_from_it = (*idx).ts;
+        //     if (ts_from_it == ts) {
+        //         return *idx;
+        //     }
+        //     throw pybind11::key_error("timestamp: " + std::to_string(ts));
+        // }
 
         const size_t nearest_index_of_ts(const int64_t &ts) {
             auto idx = lower_bound(_data.begin(), _data.end(), ts, data_compare_left);
